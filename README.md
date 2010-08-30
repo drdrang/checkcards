@@ -1,5 +1,7 @@
 Checkcards is set of scripts for querying the Naperville Public Library about the status of items checked out and on hold for all the members of a family. [This blog post][1] describes the motivation for the scripts and how they work.
 
+![Sample email on iPhone](http://www.leancrew.com/all-this/images/library-email-iphone.png)
+
 To use the scripts, you'll have to make these changes:
 
 * In `checkcards.py`, the section starting on Line 8 will have to be personalized with your email addresses and library card information.
