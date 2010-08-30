@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python /Users/user/bin/checkcards.py | /usr/sbin/sendmail -t
