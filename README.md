@@ -2,7 +2,7 @@ Checkcards is set of scripts for querying the Naperville Public Library about th
 
 ![Sample email on iPhone](http://www.leancrew.com/all-this/images/library-email-iphone.png)
 
-If an item is due or overdue, its row will have a light red background. If an items is due within two days, its row will have a light yellow background.
+If an item is due or overdue, its row will have a light red background. If an item is due within two days, its row will have a light yellow background.
 
 To use the scripts, you'll have to make these changes:
 
