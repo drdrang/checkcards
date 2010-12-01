@@ -2,7 +2,8 @@
 
 import mechanize
 from BeautifulSoup import BeautifulSoup
-from time import strptime, strftime, localtime
+from time import strptime, strftime
+from datetime import timedelta, datetime
 import re
 
 # Card and email information. Uncomment and change this to suit your situation.
@@ -26,10 +27,16 @@ hURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/holds'
 checkedOut = []
 onHold = []
 
+# Dates (as y,m,d lists) to compare with due dates. "Soon" is 2 days from today.
+today = datetime.now().timetuple()[0:3]
+soon = (datetime.now() + timedelta(2)).timetuple()[0:3]
+
 # Function that returns an HTML table row for checked out items.
 def cRow(data):
-  if data[0][0:3] <= localtime()[0:3]: # due today or earlier
+  if data[0][0:3] <= today:         # due today or overdue
     classString = ' class="due"'
+  elif data[0][0:3] <= soon:        # due soon
+    classString = ' class="soon"'
   else:
     classString = ''
   return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
@@ -146,6 +153,9 @@ table th {
 }
 table tr.due {
   background-color: #fcc;
+}
+table tr.soon {
+  background-color: #ffc;
 }
 table td {
   padding: .25em 1em .25em 1em;
