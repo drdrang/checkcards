@@ -16,7 +16,7 @@ import re
 
 # The URLs for the library's account information.
 # Login
-lURL = 'https://encore.naperville-lib.org:443/iii/cas/login?service=https%3A%2F%2Flibrary.naperville-lib.org%3A443%2Fpatroninfo~S1%2FIIITICKET&scope=1'
+lURL = 'https://library.naperville-lib.org:443/iii/cas/login?service=http%3A%2F%2Fencore.naperville-lib.org%3A80%2Fiii%2Fencore%2Fj_acegi_cas_security_check&lang=eng'
 # Checked-out items
 cURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/items'
 # On-hold items
