@@ -2,7 +2,6 @@
 
 import mechanize
 from BeautifulSoup import BeautifulSoup
-from time import strptime, strftime
 from datetime import timedelta, datetime
 import re
 
@@ -27,20 +26,20 @@ hURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/holds'
 checkedOut = []
 onHold = []
 
-# Dates (as y,m,d lists) to compare with due dates. "Soon" is 2 days from today.
-today = datetime.now().timetuple()[0:3]
-soon = (datetime.now() + timedelta(2)).timetuple()[0:3]
+# Dates to compare with due dates. "Soon" is 2 days from today.
+today = datetime.now()
+soon = datetime.now() + timedelta(2)
 
 # Function that returns an HTML table row for checked out items.
 def cRow(data):
-  if data[0][0:3] <= today:         # due today or overdue
+  if data[0] <= today:         # due today or overdue
     classString = ' class="due"'
-  elif data[0][0:3] <= soon:        # due soon
+  elif data[0] <= soon:        # due soon
     classString = ' class="soon"'
   else:
     classString = ''
   return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
-  (classString, strftime('%b %d', data[0]), data[2], data[1])
+  (classString, data[0].strftime('%b %d'), data[2], data[1])
 
 # Function that returns an HTML table row for items on hold.
 def hRow(data):
@@ -80,7 +79,7 @@ for card in cardList:
   holds = hSoup.findAll('tr', {'class' : 'patFuncEntry'})
   
   # Due dates and pickup dates are of the form mm-dd-yy.
-  dueDate = re.compile(r'\d\d-\d\d-\d\d')
+  itemDate = re.compile(r'\d\d-\d\d-\d\d')
   
   # Go through each row of checked out items, keeping only the title and due date.
   for item in loans:
@@ -90,8 +89,8 @@ for card in cardList:
     title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
     
     # The due date is somewhere in the patFuncStatus cell.
-    dueString = dueDate.findall(item.find('td', {'class' : 'patFuncStatus'}).contents[0])[0]
-    due = strptime(dueString, '%m-%d-%y')
+    dueString = itemDate.findall(item.find('td', {'class' : 'patFuncStatus'}).contents[0])[0]
+    due = datetime.strptime(dueString, '%m-%d-%y')
     # Add the item to the checked out list. Arrange tuple so items
     # get sorted by due date.
     checkedOut.append((due, card['patron'], title))
@@ -111,8 +110,9 @@ for card in cardList:
       status = status.replace(' holds', '')
     elif n[:5] == 'Ready':                  # possibility 2
       n = -1
-      dueString = dueDate.findall(status)[0]
-      status = 'Ready<br/> ' + strftime('%b %d', strptime(dueString, '%m-%d-%y'))
+      readyString = itemDate.findall(status)[0]
+      ready = datetime.strptime(readyString, '%m-%d-%y')
+      status = 'Ready<br/> ' + ready.strftime('%b %d')
     else:                                   # possibility 3
       n = 0
     # Add the item to the on hold list. Arrange tuple so items
@@ -180,7 +180,7 @@ pageFooter = '''</body>
 
 # Print out the email header and contents. This should be piped to sendmail.
 print mailHeader % (mailFrom, mailTo)
-print pageHeader % strftime('%I:%M %p on %b %d, %Y')
+print pageHeader % datetime.now().strftime('%I:%M %p on %b %d, %Y')
 print (tableTemplate % ('Checked out', 'Due', '\n'.join([cRow(x) for x in checkedOut]))).encode('utf8')
 print (tableTemplate % ('On hold', 'Status', '\n'.join([hRow(x) for x in onHold]))).encode('utf8')
 print pageFooter
