@@ -164,7 +164,7 @@ table td {
 </style>
 </head>
 <body>
-<p>Hours: Mon-Fri: 9am - 9pm;  Sat: 9am - 5pm;  Sun: 12pm - 5pm</p>
+<p>Hours: Mon-Fri: 9am - 9pm;  Sat: 9am - 5pm;  Sun: 1pm - 5pm</p>
 <p>As of %s</p>
 '''
 
