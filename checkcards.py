@@ -98,7 +98,7 @@ for card in cardList:
   # Go through each row of holds, keeping only the title and place in line.
   for item in holds:
     # Again, the title is everything before the spaced slash.
-    title = item.find('td', {'class' : 'patFuncTitle'}).a.string.split(' / ')[0].strip()
+    title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
     # The book's status in the hold queue will be either:
     # 1. 'n of m holds'
     # 2. 'Ready. Must be picked up by mm-dd-yy'
