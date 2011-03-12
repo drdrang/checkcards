@@ -41,14 +41,16 @@ def cRow(data):
   return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
   (classString, data[0].strftime('%b %d'), data[2], data[1])
 
-# Function that returns an HTML table row for items on hold.
-def hRow(data):
-  if data[0] <= 0:  # Waiting for pickup or in transit
-    classString = ' class="due"'
-  else:
-    classString = ''
-  return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
-  (classString, data[3], data[2], data[1])
+  # Function that returns an HTML table row for items on hold.
+  def hRow(data):
+    if data[0] < 0:     # Waiting for pickup
+      classString = ' class="due"'
+    elif data[0] == 0:  # In transit
+      classString = ' class="due"'
+    else:
+      classString = ''
+    return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
+    (classString, data[3], data[2], data[1])
 
 # Go through each card, collecting the lists of items.
 for card in cardList:
