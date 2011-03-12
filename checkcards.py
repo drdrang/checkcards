@@ -95,30 +95,31 @@ for card in cardList:
     # get sorted by due date.
     checkedOut.append((due, card['patron'], title))
   
-  # Go through each row of holds, keeping only the title and place in line.
-  for item in holds:
-    # Again, the title is everything before the spaced slash.
-    title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-    # The book's status in the hold queue will be either:
-    # 1. 'n of m holds'
-    # 2. 'Ready. Must be picked up by mm-dd-yy'
-    # 3. 'IN TRANSIT'
-    status = item.find('td', {'class' : 'patFuncStatus'}).contents[0].strip()
-    n = status.split()[0]
-    if n.isdigit():                         # possibility 1
-      n = int(n)
-      status = status.replace(' holds', '')
-    elif n[:5] == 'Ready':                  # possibility 2
-      n = -1
-      readyString = itemDate.findall(status)[0]
-      ready = datetime.strptime(readyString, '%m-%d-%y')
-      status = 'Ready<br/> ' + ready.strftime('%b %d')
-    else:                                   # possibility 3
-      n = 0
-    # Add the item to the on hold list. Arrange tuple so items
-    # get sorted by position in queue. The position is faked for
-    # items ready for pickup and in transit within the library. 
-    onHold.append((n, card['patron'], title, status))
+    # Go through each row of holds, keeping only the title and place in line.
+    for item in holds:
+      # Again, the title is everything before the spaced slash.
+      title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
+      # The book's status in the hold queue will be either:
+      # 1. 'n of m holds'
+      # 2. 'Ready. Must be picked up by mm-dd-yy' (obsolete?)
+      # 3. 'DUE mm-dd-yy'
+      # 4. 'IN TRANSIT'
+      status = item.find('td', {'class' : 'patFuncStatus'}).contents[0].strip()
+      n = status.split()[0]
+      if n.isdigit():                         # possibility 1
+        n = int(n)
+        status = status.replace(' holds', '')
+      elif n[:5].lower() == 'ready' or n[:3].lower() == 'due':  # possibilities 2 & 3
+        n = -1
+        readyString = itemDate.findall(status)[0]
+        ready = datetime.strptime(readyString, '%m-%d-%y')
+        status = 'Ready<br/> ' + ready.strftime('%b %d')
+      else:                                   # possibility 4
+        n = 0
+      # Add the item to the on hold list. Arrange tuple so items
+      # get sorted by position in queue. The position is faked for
+      # items ready for pickup and in transit within the library. 
+      onHold.append((n, card['patron'], title, status))
 
 # Sort the lists.
 checkedOut.sort()
