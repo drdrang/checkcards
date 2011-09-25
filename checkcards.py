@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-import mechanize
+from twill import set_output
+from twill.commands import *
+import StringIO
 from BeautifulSoup import BeautifulSoup
 from datetime import timedelta, datetime
 import re
@@ -41,36 +43,50 @@ def cRow(data):
   return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
   (classString, data[0].strftime('%b %d'), data[2], data[1])
 
-  # Function that returns an HTML table row for items on hold.
-  def hRow(data):
-    if data[0] < 0:     # Waiting for pickup
-      classString = ' class="due"'
-    elif data[0] == 0:  # In transit
-      classString = ' class="due"'
-    else:
-      classString = ''
-    return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
-    (classString, data[3], data[2], data[1])
+# Function that returns an HTML table row for items on hold.
+def hRow(data):
+  if data[0] < 0:     # Waiting for pickup
+    classString = ' class="due"'
+  elif data[0] == 0:  # In transit
+    classString = ' class="due"'
+  else:
+    classString = ''
+  return '''<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>''' % \
+  (classString, data[3], data[2], data[1])
 
 # Go through each card, collecting the lists of items.
 for card in cardList:
-  # Need to use cookies to retain the session after login.
-  cookies = mechanize.CookieJar()
-  opener = mechanize.build_opener(mechanize.HTTPCookieProcessor(cookies))
-  mechanize.install_opener(opener)
-  
+  # These will collect the output of the twill commands.
+  noise =  StringIO.StringIO()    # for the progress messages
+  cOut = StringIO.StringIO()      # for the items checked out
+  hOut = StringIO.StringIO()      # for the items on hold
+    
   # Login
-  br = mechanize.Browser()
-  br.set_handle_robots(False)
-  br.open(lURL)
-  br.select_form(nr=0)    # the login form is the first on the page
-  br['code'] = card['code']
-  br['pin'] = card['pin']
-  resp = br.submit()
+  set_output(noise)
+  go(lURL)
+  fv('1', 'code', card['code'])
+  fv('1', 'pin', card['pin'])
+  submit()
+    
+  # Get the items checked out.
+  go(cURL)
+  set_output(cOut)
+  show()
+  cHtml = cOut.getvalue()
+  cOut.close()
   
-  # Get the pages.
-  cHtml = br.open(cURL).read()
-  hHtml = br.open(hURL).read()
+  # Get the items on hold.
+  set_output(noise)
+  go(hURL)
+  set_output(hOut)
+  show()
+  hHtml = hOut.getvalue()
+  hOut.close()
+  
+  # Logout
+  set_output(noise)
+  follow('logout')
+  noise.close()
   
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
@@ -97,31 +113,31 @@ for card in cardList:
     # get sorted by due date.
     checkedOut.append((due, card['patron'], title))
   
-    # Go through each row of holds, keeping only the title and place in line.
-    for item in holds:
-      # Again, the title is everything before the spaced slash.
-      title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-      # The book's status in the hold queue will be either:
-      # 1. 'n of m holds'
-      # 2. 'Ready. Must be picked up by mm-dd-yy' (obsolete?)
-      # 3. 'DUE mm-dd-yy'
-      # 4. 'IN TRANSIT'
-      status = item.find('td', {'class' : 'patFuncStatus'}).contents[0].strip()
-      n = status.split()[0]
-      if n.isdigit():                         # possibility 1
-        n = int(n)
-        status = status.replace(' holds', '')
-      elif n[:5].lower() == 'ready' or n[:3].lower() == 'due':  # possibilities 2 & 3
-        n = -1
-        readyString = itemDate.findall(status)[0]
-        ready = datetime.strptime(readyString, '%m-%d-%y')
-        status = 'Ready<br/> ' + ready.strftime('%b %d')
-      else:                                   # possibility 4
-        n = 0
-      # Add the item to the on hold list. Arrange tuple so items
-      # get sorted by position in queue. The position is faked for
-      # items ready for pickup and in transit within the library. 
-      onHold.append((n, card['patron'], title, status))
+  # Go through each row of holds, keeping only the title and place in line.
+  for item in holds:
+    # Again, the title is everything before the spaced slash.
+    title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
+    # The book's status in the hold queue will be either:
+    # 1. 'n of m holds'
+    # 2. 'Ready. Must be picked up by mm-dd-yy' (obsolete?)
+    # 3. 'DUE mm-dd-yy'
+    # 4. 'IN TRANSIT'
+    status = item.find('td', {'class' : 'patFuncStatus'}).contents[0].strip()
+    n = status.split()[0]
+    if n.isdigit():                         # possibility 1
+      n = int(n)
+      status = status.replace(' holds', '')
+    elif n[:5].lower() == 'ready' or n[:3].lower() == 'due':  # possibilities 2 & 3
+      n = -1
+      readyString = itemDate.findall(status)[0]
+      ready = datetime.strptime(readyString, '%m-%d-%y')
+      status = 'Ready<br/> ' + ready.strftime('%b %d')
+    else:                                   # possibility 4
+      n = 0
+    # Add the item to the on hold list. Arrange tuple so items
+    # get sorted by position in queue. The position is faked for
+    # items ready for pickup and in transit within the library. 
+    onHold.append((n, card['patron'], title, status))
 
 # Sort the lists.
 checkedOut.sort()
