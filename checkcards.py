@@ -6,9 +6,11 @@ import StringIO
 from BeautifulSoup import BeautifulSoup
 from datetime import timedelta, datetime
 import re
+from checkcards_personal import mailFrom, mailTo, cardList
 
-# Card and email information. Uncomment and change this to suit your situation.
-# The "code" entry in each cardList dictionary is the patron's library barcode.
+# Keep 'checkcards_personal.py' in the same directory as this
+# script. It should contain library card and email information
+# like the following:
 # mailFrom = 'someone@example.com'
 # mailTo = 'someone@example.com'
 # cardList = [
