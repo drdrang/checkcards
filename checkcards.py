@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-from twill import set_output
-from twill.commands import *
-import StringIO
+import mechanize
 from BeautifulSoup import BeautifulSoup
 from datetime import timedelta, datetime
 import re
@@ -58,37 +56,22 @@ def hRow(data):
 
 # Go through each card, collecting the lists of items.
 for card in cardList:
-  # These will collect the output of the twill commands.
-  noise =  StringIO.StringIO()    # for the progress messages
-  cOut = StringIO.StringIO()      # for the items checked out
-  hOut = StringIO.StringIO()      # for the items on hold
-    
-  # Login
-  set_output(noise)
-  go(lURL)
-  fv('1', 'code', card['code'])
-  fv('1', 'pin', card['pin'])
-  submit()
-    
-  # Get the items checked out.
-  go(cURL)
-  set_output(cOut)
-  show()
-  cHtml = cOut.getvalue()
-  cOut.close()
+  # Open a browser and login
+  br = mechanize.Browser()
+  br.set_handle_robots(False)
+  br.open(lURL)
+  br.select_form(nr=0)
+  br.form['code'] = card['code']
+  br.form['pin'] = card['pin']
+  br.submit()
   
-  # Get the items on hold.
-  set_output(noise)
-  go(hURL)
-  set_output(hOut)
-  show()
-  hHtml = hOut.getvalue()
-  hOut.close()
-  
-  # Logout
-  set_output(noise)
-  follow('logout')
-  noise.close()
+  # Go to the page for items checked out and get the HTML.
+  br.open(cURL)
+  cHtml = br.response().read() 
+
+  # Go to the page for items on hold and get the HTML.
+  br.open(hURL)
+  hHtml = br.response().read()
   
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
