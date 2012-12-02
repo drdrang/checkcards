@@ -18,7 +18,8 @@ from checkcards_personal import mailFrom, mailTo, cardList
 
 # The URLs for the library's account information.
 # Login
-lURL = 'https://library.naperville-lib.org:443/patroninfo~S1/IIITICKET&scope=1'
+lURL = 'https://library.naperville-lib.org/iii/cas/login?service=https%3A%2F%2Flibrary.naperville-lib.org%3A443%2Fpatroninfo~S1%2FIIITICKET&scope=1'
+# lURL = 'https://library.naperville-lib.org:443/patroninfo~S1/IIITICKET&scope=1'
 # Checked-out items
 cURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/items'
 # On-hold items
@@ -64,15 +65,14 @@ for card in cardList:
   br.form['code'] = card['code']
   br.form['pin'] = card['pin']
   br.submit()
-  
-  # Go to the page for items checked out and get the HTML.
-  br.open(cURL)
-  cHtml = br.response().read() 
+
+  # The returned page will have the items checked out.
+  cHtml = br.response().read()
 
   # Go to the page for items on hold and get the HTML.
-  br.open(hURL)
+  br.follow_link(text_regex='requests \(holds\)')
   hHtml = br.response().read()
-  
+
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
   hSoup = BeautifulSoup(hHtml)
@@ -80,24 +80,24 @@ for card in cardList:
   # Collect the table rows that contain the items.
   loans = cSoup.findAll('tr', {'class' : 'patFuncEntry'})
   holds = hSoup.findAll('tr', {'class' : 'patFuncEntry'})
-  
+
   # Due dates and pickup dates are of the form mm-dd-yy.
   itemDate = re.compile(r'\d\d-\d\d-\d\d')
-  
+
   # Go through each row of checked out items, keeping only the title and due date.
   for item in loans:
     # The title is everything before the spaced slash in the patFuncTitle
     # string. Some titles have a patFuncVol span after the title string;
     # that gets filtered out by contents[0].
     title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-    
+
     # The due date is somewhere in the patFuncStatus cell.
     dueString = itemDate.findall(item.find('td', {'class' : 'patFuncStatus'}).contents[0])[0]
     due = datetime.strptime(dueString, '%m-%d-%y')
     # Add the item to the checked out list. Arrange tuple so items
     # get sorted by due date.
     checkedOut.append((due, card['patron'], title))
-  
+
   # Go through each row of holds, keeping only the title and place in line.
   for item in holds:
     # Again, the title is everything before the spaced slash.
@@ -121,8 +121,11 @@ for card in cardList:
       n = 0
     # Add the item to the on hold list. Arrange tuple so items
     # get sorted by position in queue. The position is faked for
-    # items ready for pickup and in transit within the library. 
+    # items ready for pickup and in transit within the library.
     onHold.append((n, card['patron'], title, status))
+
+    del br
+
 
 # Sort the lists.
 checkedOut.sort()
@@ -147,7 +150,7 @@ h1 {
   margin-bottom: .25em;
 }
 table {
-  border-collapse: collapse; 
+  border-collapse: collapse;
 }
 table th {
   padding: .5em 1em .25em 1em;
