@@ -68,11 +68,12 @@ for card in cardList:
 
   # The returned page will have the items checked out.
   cHtml = br.response().read()
+  # print cHtml
 
   # Go to the page for items on hold and get the HTML.
   br.follow_link(text_regex='requests \(holds\)')
   hHtml = br.response().read()
-
+  
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
   hSoup = BeautifulSoup(hHtml)
@@ -123,8 +124,6 @@ for card in cardList:
     # get sorted by position in queue. The position is faked for
     # items ready for pickup and in transit within the library.
     onHold.append((n, card['patron'], title, status))
-
-    del br
 
 
 # Sort the lists.
