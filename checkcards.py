@@ -71,9 +71,9 @@ for card in cardList:
   # print cHtml
 
   # Go to the page for items on hold and get the HTML.
-  br.follow_link(text_regex='requests \(holds\)')
+  br.follow_link(text_regex='requests? \(holds?\)')
   hHtml = br.response().read()
-  
+
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
   hSoup = BeautifulSoup(hHtml)
