@@ -101,8 +101,15 @@ for card in cardList:
 
   # Go through each row of holds, keeping only the title and place in line.
   for item in holds:
-    # Again, the title is everything before the spaced slash.
-    title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
+    # Again, the title is everything before the spaced slash. Interlibrary loans
+    # are holds that don't appear as links, so there's no <a></a> inside the
+    # patFuncTitle item.
+    try:
+      title = item.find('td',
+              {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
+    except AttributeError:
+      title = item.find('td',
+              {'class' : 'patFuncTitle'}).contents[0].split(' / ')[0].strip()
     # The book's status in the hold queue will be either:
     # 1. 'n of m holds'
     # 2. 'Ready. Must be picked up by mm-dd-yy' (obsolete?)
