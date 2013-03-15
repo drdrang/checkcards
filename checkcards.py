@@ -89,9 +89,15 @@ for card in cardList:
   for item in loans:
     # The title is everything before the spaced slash in the patFuncTitle
     # string. Some titles have a patFuncVol span after the title string;
-    # that gets filtered out by contents[0].
-    title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-
+    # that gets filtered out by contents[0]. Interlibrary loans
+    # don't appear as links, so there's no <a></a> inside the patFuncTitle
+    # item.
+    try:
+      title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
+    except AttributeError:
+      title = item.find('td',
+              {'class' : 'patFuncTitle'}).contents[0].split(' / ')[0].strip()
+  
     # The due date is somewhere in the patFuncStatus cell.
     dueString = itemDate.findall(item.find('td', {'class' : 'patFuncStatus'}).contents[0])[0]
     due = datetime.strptime(dueString, '%m-%d-%y')
