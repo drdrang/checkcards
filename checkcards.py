@@ -16,14 +16,8 @@ from checkcards_personal import mailFrom, mailTo, cardList
 # {'patron' : 'Dad', 'code' : '98765432109876', 'pin' : '9876'},
 # {'patron' : 'Kid', 'code' : '45678912345678', 'pin' : '4567'}]
 
-# The URLs for the library's account information.
-# Login
+# The login URL for the library's account information.
 lURL = 'https://library.naperville-lib.org/iii/cas/login?service=https%3A%2F%2Flibrary.naperville-lib.org%3A443%2Fpatroninfo~S1%2FIIITICKET&scope=1'
-# lURL = 'https://library.naperville-lib.org:443/patroninfo~S1/IIITICKET&scope=1'
-# Checked-out items
-cURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/items'
-# On-hold items
-hURL = 'https://library.naperville-lib.org:443/patroninfo~S1/1110947/holds'
 
 # Initialize the lists of checked-out and on-hold items.
 checkedOut = []
@@ -66,13 +60,19 @@ for card in cardList:
   br.form['pin'] = card['pin']
   br.submit()
 
-  # The returned page will have the items checked out.
-  cHtml = br.response().read()
-  # print cHtml
-
-  # Go to the page for items on hold and get the HTML.
-  br.follow_link(text_regex='requests? \(holds?\)')
-  hHtml = br.response().read()
+  # We're now on either the page for checked-out items or for holds.
+  # Get the URL and figure out which page we're on.
+  pURL = br.response().geturl()
+  if pURL[-5:] == 'items':                            # checked-out items
+    cHtml = br.response().read()                        # get the HTML
+    br.follow_link(text_regex='requests? \(holds?\)')   # go to holds
+    hHtml = br.response().read()                        # get the HTML
+  elif pURL[-5:] == 'holds':                          # holds
+    hHtml = hHtml = br.response().read()                # get the HTML
+    br.follow_link(text_regex='currently checked out')  # go to checked-out
+    cHtml = br.response().read()                        # get the HTML
+  else:
+    continue
 
   # Parse the HTML.
   cSoup = BeautifulSoup(cHtml)
@@ -92,12 +92,8 @@ for card in cardList:
     # that gets filtered out by contents[0]. Interlibrary loans
     # don't appear as links, so there's no <a></a> inside the patFuncTitle
     # item.
-    try:
-      title = item.find('td', {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-    except AttributeError:
-      title = item.find('td',
-              {'class' : 'patFuncTitle'}).contents[0].split(' / ')[0].strip()
-  
+    title = item.find('td', {'class' : 'patFuncTitle'}).text
+
     # The due date is somewhere in the patFuncStatus cell.
     dueString = itemDate.findall(item.find('td', {'class' : 'patFuncStatus'}).contents[0])[0]
     due = datetime.strptime(dueString, '%m-%d-%y')
@@ -110,12 +106,8 @@ for card in cardList:
     # Again, the title is everything before the spaced slash. Interlibrary loans
     # are holds that don't appear as links, so there's no <a></a> inside the
     # patFuncTitle item.
-    try:
-      title = item.find('td',
-              {'class' : 'patFuncTitle'}).a.contents[0].split(' / ')[0].strip()
-    except AttributeError:
-      title = item.find('td',
-              {'class' : 'patFuncTitle'}).contents[0].split(' / ')[0].strip()
+    title = item.find('td', {'class' : 'patFuncTitle'}).text
+
     # The book's status in the hold queue will be either:
     # 1. 'n of m holds'
     # 2. 'Ready. Must be picked up by mm-dd-yy' (obsolete?)
@@ -133,6 +125,7 @@ for card in cardList:
       status = 'Ready<br/> ' + ready.strftime('%b %d')
     else:                                   # possibility 4
       n = 0
+
     # Add the item to the on hold list. Arrange tuple so items
     # get sorted by position in queue. The position is faked for
     # items ready for pickup and in transit within the library.
